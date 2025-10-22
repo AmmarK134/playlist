@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Music, Plus, Sparkles, TrendingUp, ExternalLink } from "lucide-react"
 import { PlaylistCard } from "@/components/PlaylistCard"
 import { TrackList } from "@/components/TrackList"
+import { SpotifyPlayer } from "@/components/SpotifyPlayer"
 import { useUserPlaylists, useUserData, usePlaylistTracks } from "@/lib/hooks/useSpotifyData"
 
 export default function Dashboard() {
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const { data: playlists, isLoading: playlistsLoading, error: playlistsError } = useUserPlaylists()
   const { data: userData, isLoading: userLoading } = useUserData()
   const { data: tracks, isLoading: tracksLoading } = usePlaylistTracks(selectedPlaylistId)
+  const [currentTrackUri, setCurrentTrackUri] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -49,9 +51,21 @@ export default function Dashboard() {
     setSelectedPlaylistName("")
   }
 
+  const handlePlayTrack = (trackUri: string) => {
+    setCurrentTrackUri(trackUri)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {currentTrackUri && (
+          <div className="mb-6">
+            <SpotifyPlayer 
+              trackUri={currentTrackUri} 
+              onTrackEnd={() => setCurrentTrackUri(null)}
+            />
+          </div>
+        )}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
             Welcome back, {userData?.display_name || session.user?.name || session.user?.email}!

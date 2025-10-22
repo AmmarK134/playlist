@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Music, ExternalLink, Play } from "lucide-react"
+import Image from "next/image"
 
 interface PlaylistCardProps {
   playlist: {
@@ -25,12 +26,23 @@ interface PlaylistCardProps {
 }
 
 export function PlaylistCard({ playlist, onSelectPlaylist }: PlaylistCardProps) {
+  const imageUrl = playlist.images?.[0]?.url || "/placeholder-album.svg"
+  
   return (
     <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm hover:bg-gray-800/50 transition-colors">
       <CardHeader className="pb-3">
         <div className="flex items-start space-x-4">
-          <div className="relative w-20 h-20 bg-gray-700 rounded-lg flex items-center justify-center">
-            <Music className="h-8 w-8 text-green-500" />
+          <div className="relative">
+            <Image
+              src={imageUrl}
+              alt={playlist.name}
+              width={80}
+              height={80}
+              className="rounded-lg object-cover"
+            />
+            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <Play className="h-6 w-6 text-white" />
+            </div>
           </div>
           <div className="flex-1 min-w-0">
             <CardTitle className="text-white text-lg truncate">
