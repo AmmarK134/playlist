@@ -13,10 +13,7 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    console.log("Session status:", status)
-    console.log("Session data:", session)
     if (session) {
-      console.log("Redirecting to dashboard...")
       router.push("/dashboard")
     }
   }, [session, router])
@@ -57,16 +54,6 @@ export default function Home() {
 
           <div className="mb-16">
             <LoginButton />
-            {session && (
-              <div className="mt-4">
-                <Button 
-                  onClick={() => router.push("/dashboard")}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Go to Dashboard
-                </Button>
-              </div>
-            )}
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">

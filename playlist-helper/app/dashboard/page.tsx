@@ -25,10 +25,7 @@ export default function Dashboard() {
   const [currentTrackUri, setCurrentTrackUri] = useState<string | null>(null)
 
   useEffect(() => {
-    console.log("Dashboard - Session status:", status)
-    console.log("Dashboard - Session data:", session)
     if (status === "unauthenticated") {
-      console.log("Not authenticated, redirecting to home...")
       router.push("/")
     }
   }, [status, router])
