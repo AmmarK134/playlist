@@ -10,6 +10,7 @@ import { Music, Plus, Sparkles, TrendingUp, ExternalLink } from "lucide-react"
 import { PlaylistCard } from "@/components/PlaylistCard"
 import { TrackList } from "@/components/TrackList"
 import { SimplePlayer } from "@/components/SimplePlayer"
+import { AIChat } from "@/components/AIChat"
 import { useUserPlaylists, useUserData, usePlaylistTracks } from "@/lib/hooks/useSpotifyData"
 
 export default function Dashboard() {
@@ -240,27 +241,7 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="ai-chat" className="space-y-6">
-            <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-white">AI Chat</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Chat with AI to discover music and create personalized playlists
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Sparkles className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">AI Chat Coming Soon</h3>
-                  <p className="text-gray-400 mb-4">
-                    The AI chat feature is currently under development. Stay tuned!
-                  </p>
-                  <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-800" disabled>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Start Chat (Coming Soon)
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <AIChat />
           </TabsContent>
         </Tabs>
       </div>
