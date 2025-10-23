@@ -18,11 +18,17 @@ export async function POST(request: NextRequest) {
 
     const { playlistName, description, numberOfSongs, userRequest } = await request.json()
 
+    console.log(`=== PLAYLIST CREATION API DEBUG ===`)
+    console.log(`Received data:`, { playlistName, description, numberOfSongs, userRequest })
+    console.log(`Number of songs requested: ${numberOfSongs}`)
+    console.log(`=====================================`)
+
     if (!playlistName) {
       return NextResponse.json({ error: "Playlist name is required" }, { status: 400 })
     }
 
     const maxSongs = numberOfSongs || 20 // Default to 20 songs if not specified
+    console.log(`Using maxSongs: ${maxSongs}`)
 
     // Get user's top artists/tracks for context
     const spotifyClient = createSpotifyClient(session.accessToken as string)
@@ -40,12 +46,13 @@ User's Top Tracks: ${topTracks.body.items.map((track: any) => track.name).join('
 User's music taste context:
 ${userContext}
 
-Requirements:
-- Generate exactly ${maxSongs} songs
+CRITICAL REQUIREMENTS:
+- Generate EXACTLY ${maxSongs} songs (not more, not less)
 - Format: "Artist - Song Title" (one per line)
-- No additional text or explanations
+- No additional text, explanations, or numbering
 - Focus on the playlist theme: ${playlistName}
 - Consider user's music taste when selecting songs
+- Each line should contain exactly one song in the format "Artist - Song Title"
 
 Return only the song suggestions, one per line, in the format "Artist - Song Title". Do not include any other text.`
 

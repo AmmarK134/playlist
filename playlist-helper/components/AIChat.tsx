@@ -90,21 +90,19 @@ export function AIChat() {
 
         // Check if AI wants to create a playlist
         if (data.isPlaylistCreation && data.playlistName) {
-          // Extract number of songs from the user's last message
+          // Get the song count from the AI response (most reliable)
+          const numberOfSongs = data.songCount || 20
+          
+          // Get user's last message for context
           const userMessages = messages.filter(msg => msg.role === 'user')
           const lastUserMessage = userMessages[userMessages.length - 1]?.content || ''
           
-          // Look for number of songs in the user's message - try multiple patterns
-          let songCountMatch = lastUserMessage.match(/(\d+)\s*songs?/i)
-          if (!songCountMatch) {
-            // Try other patterns like "50", "twenty", etc.
-            songCountMatch = lastUserMessage.match(/(\d+)/)
-          }
-          
-          const numberOfSongs = songCountMatch ? parseInt(songCountMatch[1]) : 20
-          
-          console.log(`Extracted song count: ${numberOfSongs} from message: "${lastUserMessage}"`)
+          console.log(`=== SONG COUNT EXTRACTION DEBUG ===`)
+          console.log(`AI provided song count: ${data.songCount}`)
+          console.log(`Final song count: ${numberOfSongs}`)
+          console.log(`User message: "${lastUserMessage}"`)
           console.log(`AI response: "${data.message}"`)
+          console.log(`=====================================`)
           
           setPlaylistCreation({
             name: data.playlistName,
