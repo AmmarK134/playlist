@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { LoginButton } from "@/components/LoginButton"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Music, Sparkles, Headphones } from "lucide-react"
 
 export default function Home() {
@@ -12,7 +13,10 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
+    console.log("Session status:", status)
+    console.log("Session data:", session)
     if (session) {
+      console.log("Redirecting to dashboard...")
       router.push("/dashboard")
     }
   }, [session, router])
@@ -21,6 +25,17 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
+      </div>
+    )
+  }
+
+  if (session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-white">Redirecting to dashboard...</p>
+        </div>
       </div>
     )
   }
@@ -42,6 +57,16 @@ export default function Home() {
 
           <div className="mb-16">
             <LoginButton />
+            {session && (
+              <div className="mt-4">
+                <Button 
+                  onClick={() => router.push("/dashboard")}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Go to Dashboard
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
