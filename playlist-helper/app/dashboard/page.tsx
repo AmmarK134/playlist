@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Music, Plus, Sparkles, TrendingUp, ExternalLink } from "lucide-react"
 import { PlaylistCard } from "@/components/PlaylistCard"
 import { TrackList } from "@/components/TrackList"
-import { SpotifyPlayer } from "@/components/SpotifyPlayer"
+import { SimplePlayer } from "@/components/SimplePlayer"
 import { useUserPlaylists, useUserData, usePlaylistTracks } from "@/lib/hooks/useSpotifyData"
 
 export default function Dashboard() {
@@ -60,7 +60,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {currentTrackUri && (
           <div className="mb-6">
-            <SpotifyPlayer 
+            <SimplePlayer 
               trackUri={currentTrackUri} 
               onTrackEnd={() => setCurrentTrackUri(null)}
             />

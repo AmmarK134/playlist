@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Play, Pause, ExternalLink, Music } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
-import { SpotifyPlayer } from "./SpotifyPlayer"
+import { SimplePlayer } from "./SimplePlayer"
 
 interface Track {
   track: {
@@ -34,6 +34,7 @@ interface TrackListProps {
 export function TrackList({ tracks, playlistName, onBack }: TrackListProps) {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null)
   const [currentTrackUri, setCurrentTrackUri] = useState<string | null>(null)
+  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null)
 
   const formatDuration = (ms: number) => {
     const minutes = Math.floor(ms / 60000)
@@ -41,16 +42,27 @@ export function TrackList({ tracks, playlistName, onBack }: TrackListProps) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
-  const playTrack = (track: Track['track']) => {
+  const playTrack = (track: Track['track'], index: number) => {
     if (playingTrack === track.id) {
       setPlayingTrack(null)
       setCurrentTrackUri(null)
+      setCurrentTrackIndex(null)
       return
     }
 
     // Use Spotify Web Playback SDK for full track playback
     setCurrentTrackUri(track.uri)
     setPlayingTrack(track.id)
+    setCurrentTrackIndex(index)
+  }
+
+  const handleTrackChange = (index: number) => {
+    setCurrentTrackIndex(index)
+    const track = tracks[index]?.track
+    if (track) {
+      setPlayingTrack(track.id)
+      setCurrentTrackUri(track.uri)
+    }
   }
 
   return (
@@ -67,9 +79,15 @@ export function TrackList({ tracks, playlistName, onBack }: TrackListProps) {
       </div>
 
       {currentTrackUri && (
-        <SpotifyPlayer 
+        <SimplePlayer 
           trackUri={currentTrackUri} 
-          onTrackEnd={() => setPlayingTrack(null)}
+          onTrackEnd={() => {
+            setPlayingTrack(null)
+            setCurrentTrackIndex(null)
+          }}
+          playlistTracks={tracks}
+          currentTrackIndex={currentTrackIndex}
+          onTrackChange={handleTrackChange}
         />
       )}
 
@@ -124,7 +142,7 @@ export function TrackList({ tracks, playlistName, onBack }: TrackListProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => playTrack(track)}
+                      onClick={() => playTrack(track, index)}
                       className="border-gray-600 text-white hover:bg-gray-800"
                     >
                       {isPlaying ? (
