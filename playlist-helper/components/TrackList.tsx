@@ -22,6 +22,7 @@ interface Track {
       spotify: string
     }
     preview_url: string | null
+    uri: string // Spotify URI for playback
   }
 }
 
@@ -86,7 +87,7 @@ export function TrackList({ tracks, playlistName, onBack }: TrackListProps) {
             setCurrentTrackIndex(null)
           }}
           playlistTracks={tracks}
-          currentTrackIndex={currentTrackIndex}
+          currentTrackIndex={currentTrackIndex ?? undefined}
           onTrackChange={handleTrackChange}
         />
       )}
