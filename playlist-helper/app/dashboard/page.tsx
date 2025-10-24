@@ -21,7 +21,7 @@ export default function Dashboard() {
 
   const { data: playlists, isLoading: playlistsLoading, error: playlistsError } = useUserPlaylists()
   const { data: userData, isLoading: userLoading } = useUserData()
-  const { data: tracks, isLoading: tracksLoading } = usePlaylistTracks(selectedPlaylistId)
+  const { data: tracks } = usePlaylistTracks(selectedPlaylistId)
   const [currentTrackUri, setCurrentTrackUri] = useState<string | null>(null)
 
   useEffect(() => {
@@ -52,9 +52,6 @@ export default function Dashboard() {
     setSelectedPlaylistName("")
   }
 
-  const handlePlayTrack = (trackUri: string) => {
-    setCurrentTrackUri(trackUri)
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">

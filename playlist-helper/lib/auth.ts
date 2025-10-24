@@ -1,10 +1,19 @@
-import { AuthOptions } from "next-auth"
+import { type NextAuthOptions } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import SpotifyProvider from "next-auth/providers/spotify"
 import { prisma } from "@/lib/prisma"
+import type { JWT } from "next-auth/jwt"
+import type { Session } from "next-auth"
+
+export interface ExtendedToken extends JWT {
+  access_token?: string
+  refresh_token?: string
+  expires_at?: number
+  error?: "RefreshAccessTokenError"
+}
 
 // Function to refresh the access token
-async function refreshAccessToken(token: any) {
+async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> {
   try {
     const url = "https://accounts.spotify.com/api/token"
     
@@ -29,9 +38,9 @@ async function refreshAccessToken(token: any) {
 
     return {
       ...token,
-      accessToken: refreshedTokens.access_token,
-      accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
-      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
+      access_token: refreshedTokens.access_token,
+      expires_at: Date.now() + refreshedTokens.expires_in * 1000,
+      refresh_token: refreshedTokens.refresh_token ?? token.refresh_token, // Fall back to old refresh token
     }
   } catch (error) {
     console.log("Error refreshing access token", error)
@@ -43,7 +52,7 @@ async function refreshAccessToken(token: any) {
   }
 }
 
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     SpotifyProvider({
@@ -57,33 +66,36 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, user }: any) {
+    async jwt({ token, account, user }) {
+      const t = token as ExtendedToken
+      
       // Initial sign in
       if (account && user) {
-        return {
-          accessToken: account.access_token,
-          refreshToken: account.refresh_token,
-          accessTokenExpires: account.expires_at * 1000,
-          user,
-        }
+        t.access_token = account.access_token
+        t.refresh_token = account.refresh_token ?? t.refresh_token
+        t.expires_at = account.expires_at
+        return t
       }
 
       // Return previous token if the access token has not expired yet
-      if (Date.now() < (token.accessTokenExpires as number)) {
-        return token
+      if (Date.now() < (t.expires_at as number)) {
+        return t
       }
 
       // Access token has expired, try to update it
-      return await refreshAccessToken(token)
+      return await refreshAccessToken(t)
     },
-    async session({ session, token }: any) {
-      if (token) {
-        session.accessToken = token.accessToken as string
-        session.refreshToken = token.refreshToken as string
-        session.expiresAt = token.accessTokenExpires as number
-        session.error = token.error
+    async session({ session, token }) {
+      const s = session as Session & { access_token?: string; refresh_token?: string; expires_at?: number; error?: string }
+      const t = token as ExtendedToken
+      
+      if (t) {
+        s.access_token = t.access_token
+        s.refresh_token = t.refresh_token
+        s.expires_at = t.expires_at
+        s.error = t.error
       }
-      return session
+      return s
     },
   },
   pages: {

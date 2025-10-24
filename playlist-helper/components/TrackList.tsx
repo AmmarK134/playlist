@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Play, Pause, ExternalLink, Music } from "lucide-react"
+import { Play, Pause, ExternalLink } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 import { SimplePlayer } from "./SimplePlayer"

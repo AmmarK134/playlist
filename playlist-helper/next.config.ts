@@ -42,9 +42,7 @@ const nextConfig: NextConfig = {
     ],
   },
   // Ensure server-side rendering for NextAuth
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
+  serverExternalPackages: ['@prisma/client'],
 };
 
 export default nextConfig;
