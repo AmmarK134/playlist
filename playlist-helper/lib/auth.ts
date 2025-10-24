@@ -63,6 +63,14 @@ export const authOptions: NextAuthOptions = {
           scope: "user-read-email user-read-private playlist-read-private playlist-modify-public playlist-modify-private user-top-read streaming user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-recently-played",
         },
       },
+      profile(profile) {
+        return {
+          id: profile.id,
+          name: profile.display_name,
+          email: profile.email,
+          image: profile.images?.[0]?.url,
+        }
+      },
     }),
   ],
   callbacks: {
@@ -105,5 +113,5 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt" as const,
   },
-  debug: process.env.NODE_ENV === "development", // Add debug mode
+  debug: true, // Enable debug mode for troubleshooting
 }
