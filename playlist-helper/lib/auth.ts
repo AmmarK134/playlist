@@ -26,7 +26,7 @@ async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> 
         client_id: process.env.SPOTIFY_CLIENT_ID!,
         client_secret: process.env.SPOTIFY_CLIENT_SECRET!,
         grant_type: "refresh_token",
-        refresh_token: token.refreshToken,
+        refresh_token: token.refresh_token || "",
       }),
     })
 
@@ -86,13 +86,13 @@ export const authOptions: NextAuthOptions = {
       return await refreshAccessToken(t)
     },
     async session({ session, token }) {
-      const s = session as Session & { access_token?: string; refresh_token?: string; expires_at?: number; error?: string }
+      const s = session as Session & { accessToken?: string; refreshToken?: string; expiresAt?: number; error?: string }
       const t = token as ExtendedToken
       
       if (t) {
-        s.access_token = t.access_token
-        s.refresh_token = t.refresh_token
-        s.expires_at = t.expires_at
+        s.accessToken = t.access_token
+        s.refreshToken = t.refresh_token
+        s.expiresAt = t.expires_at
         s.error = t.error
       }
       return s
