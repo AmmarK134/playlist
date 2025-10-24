@@ -20,10 +20,10 @@ declare global {
 
 export function SpotifyPlayer({ trackUri, onTrackEnd }: SpotifyPlayerProps) {
   const { data: session } = useSession()
-  const [player, setPlayer] = useState<Spotify.Player | null>(null)
+  const [player, setPlayer] = useState<any>(null)
   const [deviceId, setDeviceId] = useState<string>("")
   const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTrack, setCurrentTrack] = useState<Spotify.Track | null>(null)
+  const [currentTrack, setCurrentTrack] = useState<any>(null)
   const [position, setPosition] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(50)
@@ -31,7 +31,7 @@ export function SpotifyPlayer({ trackUri, onTrackEnd }: SpotifyPlayerProps) {
   const [isReady, setIsReady] = useState(false)
   const [sdkLoaded, setSdkLoaded] = useState(false)
   const [connectionError, setConnectionError] = useState<string | null>(null)
-  const playerRef = useRef<Spotify.Player | null>(null)
+  const playerRef = useRef<any>(null)
   const positionIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -122,7 +122,7 @@ export function SpotifyPlayer({ trackUri, onTrackEnd }: SpotifyPlayerProps) {
       setIsReady(false)
     })
 
-    spotifyPlayer.addListener("player_state_changed", (state: Spotify.PlaybackState) => {
+    spotifyPlayer.addListener("player_state_changed", (state: any) => {
       if (!state) return
 
       setCurrentTrack(state.track_window.current_track)
