@@ -100,8 +100,10 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/",
+    error: "/", // Add error page redirect to home
   },
   session: {
     strategy: "jwt" as const,
   },
+  debug: process.env.NODE_ENV === "development", // Add debug mode
 }
