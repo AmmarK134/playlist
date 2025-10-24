@@ -98,9 +98,9 @@ export const authOptions: NextAuthOptions = {
       const t = token as ExtendedToken
       
       if (t) {
-        s.accessToken = t.access_token
-        s.refreshToken = t.refresh_token
-        s.expiresAt = t.expires_at
+        s.accessToken = t.access_token as string
+        s.refreshToken = t.refresh_token as string
+        s.expiresAt = t.expires_at as number
         s.error = t.error
       }
       return s
