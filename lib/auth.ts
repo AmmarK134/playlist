@@ -58,7 +58,7 @@ export const authOptions: NextAuthOptions = {
       checks: ["pkce", "state"],
       authorization: {
         params: {
-          scope: "user-read-email user-top-read user-read-recently-played playlist-modify-private playlist-modify-public",
+          scope: "user-read-email user-read-private user-top-read user-read-recently-played playlist-read-private playlist-read-public playlist-modify-private playlist-modify-public",
         },
       },
       profile(profile) {
@@ -84,6 +84,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       (session as any).access_token = token.access_token;
+      (session as any).accessToken = token.access_token; // Add both for compatibility
       return session;
     },
   },

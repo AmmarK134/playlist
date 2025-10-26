@@ -14,7 +14,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.accessToken) {
+    const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
+    
+    if (!accessToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
     console.log(`Using maxSongs: ${maxSongs}`)
 
     // Get user's top artists/tracks for context
-    const spotifyClient = createSpotifyClient(session.accessToken as string)
+    const spotifyClient = createSpotifyClient(accessToken)
     const topArtists = await spotifyClient.getMyTopArtists({ limit: 5 })
     const topTracks = await spotifyClient.getMyTopTracks({ limit: 5 })
 
@@ -82,7 +84,7 @@ Return only the song suggestions, one per line, in the format "Artist - Song Tit
     // Get user's profile first
     const userResponse = await fetch(`https://api.spotify.com/v1/me`, {
       headers: {
-        Authorization: `Bearer ${session.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     })
 
@@ -97,7 +99,7 @@ Return only the song suggestions, one per line, in the format "Artist - Song Tit
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         name: playlistName,
@@ -127,7 +129,7 @@ Return only the song suggestions, one per line, in the format "Artist - Song Tit
       try {
         const searchResponse = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(song)}&type=track&limit=1`, {
           headers: {
-            Authorization: `Bearer ${session.accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
           },
         })
 
@@ -148,7 +150,7 @@ Return only the song suggestions, one per line, in the format "Artist - Song Tit
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           uris: songUris

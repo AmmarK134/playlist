@@ -9,11 +9,13 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.accessToken) {
+    const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
+    
+    if (!accessToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const spotify = createSpotifyClient(session.accessToken as string)
+    const spotify = createSpotifyClient(accessToken)
     const playlists = await spotify.getUserPlaylists()
     
     return NextResponse.json(playlists.body)

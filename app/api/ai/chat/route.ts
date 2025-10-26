@@ -14,7 +14,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.accessToken) {
+    const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
+    
+    if (!accessToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Spotify client
-    const spotify = createSpotifyClient(session.accessToken as string)
+    const spotify = createSpotifyClient(accessToken)
 
     // Get user's top artists and tracks for context
     const [topArtists, topTracks] = await Promise.all([
