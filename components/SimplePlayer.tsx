@@ -100,14 +100,12 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
           deviceId = devices.devices[0].id
           console.log("Using first available device:", devices.devices[0].name)
         } else {
-          setError("No Spotify devices found. Please open Spotify on your phone or computer.")
-          setIsLoading(false)
-          return
+          console.log("No devices found, trying to play without device ID")
+          // Don't set error here - try to play without device ID first
         }
       } else {
-        setError("Could not access Spotify devices. Please make sure Spotify is open.")
-        setIsLoading(false)
-        return
+        console.log("Could not get devices, trying to play without device ID")
+        // Don't set error here - try to play without device ID first
       }
 
       // Play the track
@@ -134,8 +132,12 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
         
         if (playResponse.status === 404) {
           setError("No active Spotify device found. Please open Spotify on your phone or computer and try again.")
+        } else if (playResponse.status === 403) {
+          setError("Spotify playback not available. Please check your Spotify Premium subscription.")
+        } else if (playResponse.status === 401) {
+          setError("Authentication failed. Please log out and log in again.")
         } else {
-          setError(`Failed to play track: ${playResponse.status}`)
+          setError(`Failed to play track (${playResponse.status}). Please make sure Spotify is open and try again.`)
         }
       }
     } catch (error) {
@@ -325,6 +327,14 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
             <Volume2 className="h-8 w-8 mx-auto mb-2" />
             <p className="font-semibold">Playback Error</p>
             <p className="text-sm mt-2">{error}</p>
+            <div className="mt-4 space-y-2">
+              <p className="text-xs text-gray-400">
+                💡 Make sure Spotify is open on your computer or phone
+              </p>
+              <p className="text-xs text-gray-400">
+                💡 Check that you have Spotify Premium (required for playback)
+              </p>
+            </div>
             <Button
               onClick={() => setError(null)}
               className="mt-4 bg-red-600 hover:bg-red-700 text-white text-xs"
