@@ -30,6 +30,11 @@ export async function POST(request: NextRequest) {
     
     // Use explicit token if provided, otherwise fall back to session
     const finalAccessToken = explicitToken || accessToken;
+    
+    if (!finalAccessToken) {
+      console.error("No access token available")
+      return NextResponse.json({ error: "No access token available" }, { status: 401 })
+    }
 
     console.log(`=== PLAYLIST CREATION API DEBUG ===`)
     console.log(`Received data:`, { playlistName, description, numberOfSongs, userRequest })
@@ -47,9 +52,17 @@ export async function POST(request: NextRequest) {
     console.log(`Using maxSongs: ${maxSongs}`)
 
     // Get user's top artists/tracks for context
-    const spotifyClient = createSpotifyClient(finalAccessToken)
-    const topArtists = await spotifyClient.getMyTopArtists({ limit: 5 })
-    const topTracks = await spotifyClient.getMyTopTracks({ limit: 5 })
+    let topArtists, topTracks;
+    try {
+      const spotifyClient = createSpotifyClient(finalAccessToken)
+      topArtists = await spotifyClient.getMyTopArtists({ limit: 5 })
+      topTracks = await spotifyClient.getMyTopTracks({ limit: 5 })
+    } catch (error) {
+      console.error("Error getting user's top artists/tracks:", error)
+      // Continue without user context if this fails
+      topArtists = { body: { items: [] } }
+      topTracks = { body: { items: [] } }
+    }
 
     const userContext = `
 User's Top Artists: ${topArtists.body.items.map((artist: any) => artist.name).join(', ')}
@@ -99,12 +112,14 @@ CRITICAL REQUIREMENTS:
 
 Return only the song suggestions, one per line, in the format "Artist - Song Title". Do not include any other text.`
 
-    const songCompletion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: `You are a music expert. Analyze the request and use the appropriate approach:
+    let songCompletion;
+    try {
+      songCompletion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `You are a music expert. Analyze the request and use the appropriate approach:
 
 SPECIFIC ARTIST ONLY: If user asks for "songs by [Artist]" or "playlist of [Artist]", focus ONLY on that artist's songs.
 
@@ -113,20 +128,36 @@ SIMILAR TO ARTIST: If user asks for "[Artist] style" or "similar to [Artist]", f
 USE USER'S MUSIC TASTE: If user asks for premade options (workout, roadtrip, study) or personal requests (my feelings, my mood), use their music taste as foundation.
 
 DEFAULT: For other requests, focus on the specific request and use user's taste only as secondary reference.`
-        },
-        {
-          role: "user",
-          content: songGenerationPrompt
-        }
-      ],
-      max_tokens: 1000,
-      temperature: 0.8,
-    })
+          },
+          {
+            role: "user",
+            content: songGenerationPrompt
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.8,
+      })
+    } catch (error) {
+      console.error("Error calling OpenAI:", error)
+      throw new Error(`Failed to generate song suggestions: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
 
     const songSuggestions = songCompletion.choices[0]?.message?.content || ""
-    const songs = songSuggestions.split('\n').filter(song => song.trim()).slice(0, maxSongs)
+    let songs = songSuggestions.split('\n').filter(song => song.trim()).slice(0, maxSongs)
     
     console.log(`Generated ${songs.length} song suggestions:`, songs)
+    
+    // Fallback if no songs were generated
+    if (songs.length === 0) {
+      console.log("No songs generated, using fallback songs")
+      songs = [
+        "The Beatles - Here Comes The Sun",
+        "Queen - Bohemian Rhapsody", 
+        "Led Zeppelin - Stairway to Heaven",
+        "Pink Floyd - Wish You Were Here",
+        "The Rolling Stones - Paint It Black"
+      ].slice(0, Math.min(maxSongs, 5))
+    }
     
     // If we don't have enough songs, try to generate more
     if (songs.length < maxSongs) {
