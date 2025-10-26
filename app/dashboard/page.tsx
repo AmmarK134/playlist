@@ -176,6 +176,25 @@ export default function Dashboard() {
                   </CardHeader>
                 </Card>
 
+                {/* Spotify App Notice */}
+                <div className="fixed top-4 right-4 z-50">
+                  <Card className="bg-green-900/20 border-green-500/30 backdrop-blur-sm max-w-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-start space-x-3">
+                        <Music className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-green-100">
+                            Spotify App Required
+                          </p>
+                          <p className="text-xs text-green-200 mt-1">
+                            Make sure Spotify is open on your PC to play music
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
                 {playlistsLoading ? (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[...Array(6)].map((_, i) => (

@@ -28,12 +28,13 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
 
   // Get current playback state
   const getPlaybackState = async () => {
-    if (!session?.accessToken) return
+    const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
+    if (!accessToken) return
 
     try {
       const response = await fetch(`https://api.spotify.com/v1/me/player`, {
         headers: {
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       })
 
@@ -64,7 +65,14 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
 
   // Play a track using Spotify Web API
   const playTrack = async (uri: string) => {
-    if (!session?.accessToken) return
+    const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
+    console.log("Session data:", session);
+    console.log("Access token:", accessToken);
+    
+    if (!accessToken) {
+      setError("No access token available. Please log in again.");
+      return;
+    }
 
     setIsLoading(true)
     setError(null)
@@ -75,7 +83,7 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
       // First, get available devices
       const devicesResponse = await fetch(`https://api.spotify.com/v1/me/player/devices`, {
         headers: {
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       })
 
@@ -111,7 +119,7 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
         }),
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       })
 
@@ -156,10 +164,11 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
 
     try {
       console.log(`${isPlaying ? 'Pausing' : 'Playing'} track...`)
+      const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
       const response = await fetch(`https://api.spotify.com/v1/me/player/${isPlaying ? 'pause' : 'play'}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       })
 
@@ -261,7 +270,8 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
 
   // Set volume
   const setPlayerVolume = async (newVolume: number) => {
-    if (!session?.accessToken) return
+    const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
+    if (!accessToken) return
 
     setVolume(newVolume)
     setIsMuted(newVolume === 0)
@@ -270,7 +280,7 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
       const response = await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${newVolume}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       })
 
