@@ -44,9 +44,38 @@ User's Top Artists: ${topArtists.body.items.map((artist: any) => artist.name).jo
 User's Top Tracks: ${topTracks.body.items.map((track: any) => track.name).join(', ')}
 `
 
+    // Analyze the request to determine the approach
+    const request = userRequest || playlistName;
+    const isSpecificArtist = /(songs by|playlist of|tracks by|music by)\s+[A-Za-z\s]+/i.test(request);
+    const isSimilarToArtist = /(style|similar to|like|sounds like)\s+[A-Za-z\s]+/i.test(request);
+    const isPremadeOption = /(workout|roadtrip|study|party|chill|focus|energy)/i.test(request);
+    const isPersonalTaste = /(my feelings|my mood|my taste|based on me|personal)/i.test(request);
+
+    let approach = "";
+    let focusInstructions = "";
+
+    if (isSpecificArtist) {
+      approach = "SPECIFIC ARTIST ONLY";
+      focusInstructions = `Focus ONLY on songs by the specific artist mentioned. Do NOT use user's personal taste.`;
+    } else if (isSimilarToArtist) {
+      approach = "SIMILAR TO ARTIST";
+      focusInstructions = `Focus on the mentioned artist and similar artists. Do NOT use user's personal taste.`;
+    } else if (isPremadeOption || isPersonalTaste) {
+      approach = "USE USER'S MUSIC TASTE";
+      focusInstructions = `Use the user's music taste as the foundation for this playlist.`;
+    } else {
+      approach = "DEFAULT - FOCUS ON REQUEST";
+      focusInstructions = `Focus on the specific request, use user's taste only as secondary reference.`;
+    }
+
+    console.log(`Playlist creation approach: ${approach} for request: "${request}"`);
+
     // Generate song suggestions using OpenAI
-    const songGenerationPrompt = `Based on this playlist request: "${userRequest || playlistName}", generate exactly ${maxSongs} song suggestions in the format "Artist - Song Title". 
+    const songGenerationPrompt = `Based on this playlist request: "${request}", generate exactly ${maxSongs} song suggestions in the format "Artist - Song Title". 
     
+APPROACH: ${approach}
+${focusInstructions}
+
 User's music taste context:
 ${userContext}
 
@@ -54,8 +83,6 @@ CRITICAL REQUIREMENTS:
 - Generate EXACTLY ${maxSongs} songs (not more, not less)
 - Format: "Artist - Song Title" (one per line)
 - No additional text, explanations, or numbering
-- Focus on the playlist theme: ${playlistName}
-- Consider user's music taste when selecting songs
 - Each line should contain exactly one song in the format "Artist - Song Title"
 
 Return only the song suggestions, one per line, in the format "Artist - Song Title". Do not include any other text.`
@@ -65,7 +92,15 @@ Return only the song suggestions, one per line, in the format "Artist - Song Tit
       messages: [
         {
           role: "system",
-          content: "You are a music expert. Generate song suggestions based on user requests and their music taste."
+          content: `You are a music expert. Analyze the request and use the appropriate approach:
+
+SPECIFIC ARTIST ONLY: If user asks for "songs by [Artist]" or "playlist of [Artist]", focus ONLY on that artist's songs.
+
+SIMILAR TO ARTIST: If user asks for "[Artist] style" or "similar to [Artist]", focus on that artist and similar artists. Do NOT use user's personal taste.
+
+USE USER'S MUSIC TASTE: If user asks for premade options (workout, roadtrip, study) or personal requests (my feelings, my mood), use their music taste as foundation.
+
+DEFAULT: For other requests, focus on the specific request and use user's taste only as secondary reference.`
         },
         {
           role: "user",
