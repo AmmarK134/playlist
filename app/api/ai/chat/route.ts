@@ -114,6 +114,7 @@ User: ${message}`
 
     let isPlaylistCreation = false
     let playlistName = ""
+    let songCount = 20 // default
 
     if (aiResponse.startsWith("CREATE_PLAYLIST:")) {
       isPlaylistCreation = true
@@ -122,7 +123,6 @@ User: ${message}`
       playlistName = parts[0].replace("CREATE_PLAYLIST:", "").trim()
       
       // Look for song count in the response
-      let songCount = 20 // default
       if (parts.length > 1) {
         const songMatch = parts[1].match(/SONGS:\s*(\d+)/i)
         if (songMatch) {
@@ -133,14 +133,11 @@ User: ${message}`
       console.log(`AI wants to create playlist: "${playlistName}" with ${songCount} songs`)
     }
 
-    console.log(`AI Response: "${aiResponse}"`)
-    console.log(`Is playlist creation: ${isPlaylistCreation}`)
-
     return NextResponse.json({
       message: aiResponse,
       isPlaylistCreation: isPlaylistCreation,
       playlistName: playlistName,
-      songCount: isPlaylistCreation ? (aiResponse.includes("| SONGS:") ? parseInt(aiResponse.match(/SONGS:\s*(\d+)/i)?.[1] || "20") : 20) : null
+      songCount: isPlaylistCreation ? songCount : null
     })
 
   } catch (error) {

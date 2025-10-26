@@ -97,13 +97,6 @@ export function AIChat() {
           const userMessages = messages.filter(msg => msg.role === 'user')
           const lastUserMessage = userMessages[userMessages.length - 1]?.content || ''
           
-          console.log(`=== SONG COUNT EXTRACTION DEBUG ===`)
-          console.log(`AI provided song count: ${data.songCount}`)
-          console.log(`Final song count: ${numberOfSongs}`)
-          console.log(`User message: "${lastUserMessage}"`)
-          console.log(`AI response: "${data.message}"`)
-          console.log(`=====================================`)
-          
           setPlaylistCreation({
             name: data.playlistName,
             songs: [],
