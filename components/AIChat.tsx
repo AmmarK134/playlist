@@ -136,7 +136,15 @@ export function AIChat() {
   }
 
   const createPlaylist = async () => {
-    if (!playlistCreation || !session?.accessToken) return
+    const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
+    console.log("AIChat - Session:", session);
+    console.log("AIChat - Access token:", accessToken);
+    console.log("AIChat - Playlist creation:", playlistCreation);
+    
+    if (!playlistCreation || !accessToken) {
+      console.log("AIChat - Missing playlist creation or access token");
+      return;
+    }
 
     setIsCreatingPlaylist(true)
 
@@ -148,17 +156,24 @@ export function AIChat() {
         userRequest: playlistCreation.userRequest
       }
       
-      console.log("Sending playlist creation request:", requestData)
+      console.log("AIChat - Sending playlist creation request:", requestData)
       
       const response = await fetch('/api/ai/create-playlist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData),
+        body: JSON.stringify({
+          ...requestData,
+          accessToken: accessToken // Pass the token explicitly
+        }),
       })
 
+      console.log("AIChat - Response status:", response.status);
+      console.log("AIChat - Response ok:", response.ok);
+
       const data = await response.json()
+      console.log("AIChat - Response data:", data);
 
       if (response.ok) {
         const successMessage: Message = {
@@ -190,11 +205,11 @@ export function AIChat() {
         setMessages(prev => [...prev, errorMessage])
       }
     } catch (error) {
-      console.error('Error creating playlist:', error)
+      console.error('AIChat - Error creating playlist:', error)
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: 'ai',
-        content: "Sorry, I couldn't create the playlist. Please try again.",
+        content: `Sorry, I couldn't create the playlist. Error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])

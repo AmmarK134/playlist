@@ -26,11 +26,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const { playlistName, description, numberOfSongs, userRequest } = await request.json()
+    const { playlistName, description, numberOfSongs, userRequest, accessToken: explicitToken } = await request.json()
+    
+    // Use explicit token if provided, otherwise fall back to session
+    const finalAccessToken = explicitToken || accessToken;
 
     console.log(`=== PLAYLIST CREATION API DEBUG ===`)
     console.log(`Received data:`, { playlistName, description, numberOfSongs, userRequest })
     console.log(`Number of songs requested: ${numberOfSongs}`)
+    console.log(`Session access token:`, accessToken)
+    console.log(`Explicit token:`, explicitToken)
+    console.log(`Final access token:`, finalAccessToken)
     console.log(`=====================================`)
 
     if (!playlistName) {
@@ -41,7 +47,7 @@ export async function POST(request: NextRequest) {
     console.log(`Using maxSongs: ${maxSongs}`)
 
     // Get user's top artists/tracks for context
-    const spotifyClient = createSpotifyClient(accessToken)
+    const spotifyClient = createSpotifyClient(finalAccessToken)
     const topArtists = await spotifyClient.getMyTopArtists({ limit: 5 })
     const topTracks = await spotifyClient.getMyTopTracks({ limit: 5 })
 
@@ -162,7 +168,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
       try {
         userResponse = await fetch(`https://api.spotify.com/v1/me`, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${finalAccessToken}`,
           },
         })
         
@@ -196,7 +202,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${finalAccessToken}`,
       },
       body: JSON.stringify({
         name: playlistName,
@@ -229,7 +235,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
         console.log(`Searching for: ${song}`)
         const searchResponse = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(song)}&type=track&limit=1`, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${finalAccessToken}`,
           },
         })
 
@@ -258,7 +264,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${finalAccessToken}`,
         },
         body: JSON.stringify({
           uris: songUris
