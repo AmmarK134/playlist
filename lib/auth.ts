@@ -58,7 +58,7 @@ export const authOptions: NextAuthOptions = {
       checks: ["pkce", "state"],
       authorization: {
         params: {
-          scope: "user-read-email user-read-private user-top-read user-read-recently-played playlist-read-private playlist-read-public playlist-modify-private playlist-modify-public",
+          scope: "user-read-email user-top-read user-read-recently-played playlist-read-private playlist-modify-private playlist-modify-public",
         },
       },
       profile(profile) {
