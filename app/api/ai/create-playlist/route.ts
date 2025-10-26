@@ -11,28 +11,44 @@ const openai = new OpenAI({
 })
 
 export async function POST(request: NextRequest) {
-  // Set a timeout for the entire operation
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("Request timeout after 60 seconds")), 60000)
-  })
+  console.log("=== CREATE PLAYLIST API CALLED ===")
+  console.log("Request method:", request.method)
+  console.log("Request URL:", request.url)
+  console.log("Environment:", process.env.NODE_ENV)
+  console.log("Vercel:", !!process.env.VERCEL)
   
-  const operationPromise = (async () => {
-    try {
-      const session = await getServerSession(authOptions)
+  // Check environment variables
+  console.log("Environment check:")
+  console.log("- OPENAI_API_KEY:", !!process.env.OPENAI_API_KEY)
+  console.log("- NEXTAUTH_SECRET:", !!process.env.NEXTAUTH_SECRET)
+  console.log("- SPOTIFY_CLIENT_ID:", !!process.env.SPOTIFY_CLIENT_ID)
+  console.log("- SPOTIFY_CLIENT_SECRET:", !!process.env.SPOTIFY_CLIENT_SECRET)
+  
+  try {
+    console.log("Getting session...")
+    const session = await getServerSession(authOptions)
+    console.log("Session retrieved:", !!session)
+    console.log("Session keys:", session ? Object.keys(session) : "No session")
 
     const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
+    console.log("Access token from session:", !!accessToken)
     
     if (!accessToken) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+      console.log("No access token from session, will check explicit token")
     }
 
-    const { playlistName, description, numberOfSongs, userRequest, accessToken: explicitToken } = await request.json()
+    console.log("Parsing request body...")
+    const requestBody = await request.json()
+    console.log("Request body parsed successfully:", Object.keys(requestBody))
+    
+    const { playlistName, description, numberOfSongs, userRequest, accessToken: explicitToken } = requestBody
     
     // Use explicit token if provided, otherwise fall back to session
     const finalAccessToken = explicitToken || accessToken;
+    console.log("Final access token:", !!finalAccessToken)
     
     if (!finalAccessToken) {
-      console.error("No access token available")
+      console.error("No access token available - neither session nor explicit token")
       return NextResponse.json({ error: "No access token available" }, { status: 401 })
     }
 
@@ -43,9 +59,16 @@ export async function POST(request: NextRequest) {
     console.log(`Explicit token:`, explicitToken)
     console.log(`Final access token:`, finalAccessToken)
     console.log(`=====================================`)
-
+    
+    // Validate required data
     if (!playlistName) {
+      console.error("Missing playlist name")
       return NextResponse.json({ error: "Playlist name is required" }, { status: 400 })
+    }
+    
+    if (!finalAccessToken) {
+      console.error("No access token available")
+      return NextResponse.json({ error: "No access token available" }, { status: 401 })
     }
 
     const maxSongs = numberOfSongs || 20 // Default to 20 songs if not specified
@@ -331,14 +354,6 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
       }
     })
 
-    } catch (error) {
-      console.error("Error in operation:", error)
-      throw error
-    }
-  })()
-  
-  try {
-    return await Promise.race([operationPromise, timeoutPromise])
   } catch (error) {
     console.error("Error creating playlist:", error)
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace")
@@ -347,8 +362,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     const statusCode = errorMessage.includes("401") ? 401 : 
                       errorMessage.includes("403") ? 403 : 
-                      errorMessage.includes("404") ? 404 : 
-                      errorMessage.includes("timeout") ? 408 : 500
+                      errorMessage.includes("404") ? 404 : 500
     
     return NextResponse.json(
       { 
