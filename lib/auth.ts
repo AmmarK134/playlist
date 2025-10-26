@@ -79,7 +79,41 @@ export const authOptions: NextAuthOptions = {
         token.expires_at = account.expires_at; // seconds
         return token;
       }
-      // optional refresh logic here
+      
+      // Check if token is expired and refresh if needed
+      if (token.expires_at && Date.now() < token.expires_at * 1000) {
+        return token;
+      }
+      
+      // Token is expired, try to refresh
+      if (token.refresh_token) {
+        try {
+          const response = await fetch("https://accounts.spotify.com/api/token", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              grant_type: "refresh_token",
+              refresh_token: token.refresh_token,
+              client_id: process.env.SPOTIFY_CLIENT_ID!,
+              client_secret: process.env.SPOTIFY_CLIENT_SECRET!,
+            }),
+          });
+          
+          if (response.ok) {
+            const refreshedTokens = await response.json();
+            token.access_token = refreshedTokens.access_token;
+            token.expires_at = Math.floor(Date.now() / 1000) + refreshedTokens.expires_in;
+            if (refreshedTokens.refresh_token) {
+              token.refresh_token = refreshedTokens.refresh_token;
+            }
+          }
+        } catch (error) {
+          console.error("Token refresh failed:", error);
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {

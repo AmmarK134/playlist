@@ -18,6 +18,7 @@ export default function Dashboard() {
   const router = useRouter()
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null)
   const [selectedPlaylistName, setSelectedPlaylistName] = useState<string>("")
+  const [activeTab, setActiveTab] = useState("overview")
 
   const { data: playlists, isLoading: playlistsLoading, error: playlistsError } = useUserPlaylists()
   const { data: userData, isLoading: userLoading } = useUserData()
@@ -73,7 +74,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-gray-900/50 border-gray-800">
             <TabsTrigger value="overview" className="data-[state=active]:bg-green-600">
               Overview
@@ -146,11 +147,18 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                <Button 
+                  onClick={() => setActiveTab("ai-chat")}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Create New Playlist with AI
                 </Button>
-                <Button variant="outline" className="w-full border-gray-600 text-white hover:bg-gray-800">
+                <Button 
+                  onClick={() => setActiveTab("ai-chat")}
+                  variant="outline" 
+                  className="w-full border-gray-600 text-white hover:bg-gray-800"
+                >
                   <Sparkles className="mr-2 h-4 w-4" />
                   Start AI Chat Session
                 </Button>
@@ -187,7 +195,7 @@ export default function Dashboard() {
                             Spotify App Required
                           </p>
                           <p className="text-xs text-green-200 mt-1">
-                            Make sure Spotify is open on your PC to play music
+                            Make sure Spotify is open on your PC to play music (works with FREE accounts!)
                           </p>
                         </div>
                       </div>

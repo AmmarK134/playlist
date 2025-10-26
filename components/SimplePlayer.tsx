@@ -63,7 +63,7 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
     }
   }
 
-  // Play a track using Spotify Web API
+  // Play a track using Spotify Web API (works with free accounts)
   const playTrack = async (uri: string) => {
     const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
     console.log("Session data:", session);
@@ -78,71 +78,61 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
     setError(null)
 
     try {
-      console.log("Playing track:", uri)
+      console.log("Adding track to queue:", uri)
 
-      // First, get available devices
-      const devicesResponse = await fetch(`https://api.spotify.com/v1/me/player/devices`, {
+      // Add track to the user's queue (works with free accounts)
+      const queueResponse = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       })
 
-      let deviceId = null
-      if (devicesResponse.ok) {
-        const devices = await devicesResponse.json()
-        console.log("Available devices:", devices.devices)
+      if (queueResponse.ok) {
+        console.log("Track added to queue successfully")
         
-        const activeDevice = devices.devices.find((device: any) => device.is_active)
-        if (activeDevice) {
-          deviceId = activeDevice.id
-          console.log("Using active device:", activeDevice.name)
-        } else if (devices.devices.length > 0) {
-          deviceId = devices.devices[0].id
-          console.log("Using first available device:", devices.devices[0].name)
-        } else {
-          console.log("No devices found, trying to play without device ID")
-          // Don't set error here - try to play without device ID first
-        }
-      } else {
-        console.log("Could not get devices, trying to play without device ID")
-        // Don't set error here - try to play without device ID first
-      }
-
-      // Play the track
-      const playResponse = await fetch(`https://api.spotify.com/v1/me/player/play${deviceId ? `?device_id=${deviceId}` : ''}`, {
-        method: "PUT",
-        body: JSON.stringify({ 
-          uris: [uri],
-          position_ms: 0
-        }),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-
-      if (playResponse.ok) {
-        console.log("Track started playing successfully")
-        setIsPlaying(true)
-        // Get updated playback state
-        setTimeout(() => getPlaybackState(), 1000)
-      } else {
-        const errorText = await playResponse.text()
-        console.error("Failed to play track:", playResponse.status, errorText)
+        // Try to skip to next track to play the queued song
+        setTimeout(async () => {
+          try {
+            const skipResponse = await fetch(`https://api.spotify.com/v1/me/player/next`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            })
+            
+            if (skipResponse.ok) {
+              console.log("Skipped to next track (queued song)")
+              setIsPlaying(true)
+              // Get updated playback state
+              setTimeout(() => getPlaybackState(), 1000)
+            } else {
+              console.log("Could not skip to next track, but song is in queue")
+              setError("Song added to your Spotify queue! Check your Spotify app to play it.")
+            }
+          } catch (error) {
+            console.log("Could not skip to next track, but song is in queue")
+            setError("Song added to your Spotify queue! Check your Spotify app to play it.")
+          }
+        }, 500)
         
-        if (playResponse.status === 404) {
+      } else {
+        const errorText = await queueResponse.text()
+        console.error("Failed to add track to queue:", queueResponse.status, errorText)
+        
+        if (queueResponse.status === 404) {
           setError("No active Spotify device found. Please open Spotify on your phone or computer and try again.")
-        } else if (playResponse.status === 403) {
-          setError("Spotify playback not available. Please check your Spotify Premium subscription.")
-        } else if (playResponse.status === 401) {
+        } else if (queueResponse.status === 403) {
+          setError("Cannot add to queue. Please make sure Spotify is open and playing.")
+        } else if (queueResponse.status === 401) {
           setError("Authentication failed. Please log out and log in again.")
         } else {
-          setError(`Failed to play track (${playResponse.status}). Please make sure Spotify is open and try again.`)
+          setError(`Failed to add track to queue (${queueResponse.status}). Please make sure Spotify is open and try again.`)
         }
       }
     } catch (error) {
-      console.error("Error playing track:", error)
-      setError("Error playing track")
+      console.error("Error adding track to queue:", error)
+      setError("Error adding track to queue")
     } finally {
       setIsLoading(false)
     }
@@ -332,7 +322,7 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
                 💡 Make sure Spotify is open on your computer or phone
               </p>
               <p className="text-xs text-gray-400">
-                💡 Check that you have Spotify Premium (required for playback)
+                💡 Works with FREE Spotify accounts (no Premium required!)
               </p>
             </div>
             <Button
@@ -363,7 +353,10 @@ export function SimplePlayer({ trackUri, onTrackEnd, playlistTracks, currentTrac
                 • Make sure Spotify is open on your phone or computer
               </p>
               <p className="text-blue-200 text-xs mb-1">
-                • Skip buttons work when you have multiple tracks in your queue
+                • Works with FREE Spotify accounts (no Premium required!)
+              </p>
+              <p className="text-blue-200 text-xs mb-1">
+                • Songs are added to your Spotify queue
               </p>
               <p className="text-blue-200 text-xs">
                 • Wait 1-2 seconds between button clicks to avoid rate limits
