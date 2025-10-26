@@ -17,8 +17,7 @@ An AI-powered Spotify playlist creator built with Next.js 14, TypeScript, Tailwi
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **UI Components**: shadcn/ui
-- **Authentication**: NextAuth.js
-- **Database**: Prisma with SQLite
+- **Authentication**: NextAuth.js with JWT sessions
 - **State Management**: TanStack Query
 - **Icons**: Lucide React
 - **Music API**: Spotify Web API
@@ -67,8 +66,7 @@ NEXTAUTH_SECRET=your-nextauth-secret-here
 SPOTIFY_CLIENT_ID=your-spotify-client-id
 SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
 
-# Database
-DATABASE_URL="file:./dev.db"
+# No database needed - using JWT sessions
 
 # OpenAI (for future AI features)
 OPENAI_API_KEY=your-openai-api-key
@@ -81,12 +79,9 @@ OPENAI_API_KEY=your-openai-api-key
 3. Add `http://localhost:3000/api/auth/callback/spotify` to Redirect URIs
 4. Copy your Client ID and Client Secret to `.env.local`
 
-### 5. Set Up Database
+### 5. No Database Setup Needed!
 
-```bash
-npx prisma generate
-npx prisma db push
-```
+Your app uses JWT sessions - no database required!
 
 ### 6. Run the Development Server
 

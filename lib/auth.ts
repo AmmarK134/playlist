@@ -1,7 +1,5 @@
 import { type NextAuthOptions } from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
 import SpotifyProvider from "next-auth/providers/spotify"
-import { prisma } from "@/lib/prisma"
 import type { JWT } from "next-auth/jwt"
 import type { Session } from "next-auth"
 
@@ -53,14 +51,14 @@ async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> 
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
     SpotifyProvider({
       clientId: process.env.SPOTIFY_CLIENT_ID!,
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+      checks: ["pkce", "state"],
       authorization: {
         params: {
-          scope: "user-read-email user-read-private playlist-read-private playlist-modify-public playlist-modify-private user-top-read streaming user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-recently-played",
+          scope: "user-read-email user-top-read user-read-recently-played playlist-modify-private playlist-modify-public",
         },
       },
       profile(profile) {
@@ -74,36 +72,19 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, user }) {
-      const t = token as ExtendedToken
-      
-      // Initial sign in
-      if (account && user) {
-        t.access_token = account.access_token
-        t.refresh_token = account.refresh_token ?? t.refresh_token
-        t.expires_at = account.expires_at
-        return t
+    async jwt({ token, account }) {
+      if (account) {
+        token.access_token = account.access_token;
+        token.refresh_token = account.refresh_token ?? token.refresh_token;
+        token.expires_at = account.expires_at; // seconds
+        return token;
       }
-
-      // Return previous token if the access token has not expired yet
-      if (Date.now() < (t.expires_at as number)) {
-        return t
-      }
-
-      // Access token has expired, try to update it
-      return await refreshAccessToken(t)
+      // optional refresh logic here
+      return token;
     },
     async session({ session, token }) {
-      const s = session as Session & { accessToken?: string; refreshToken?: string; expiresAt?: number; error?: string }
-      const t = token as ExtendedToken
-      
-      if (t) {
-        s.accessToken = t.access_token as string
-        s.refreshToken = t.refresh_token as string
-        s.expiresAt = t.expires_at as number
-        s.error = t.error
-      }
-      return s
+      (session as any).access_token = token.access_token;
+      return session;
     },
   },
   pages: {
@@ -113,5 +94,6 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt" as const,
   },
+  secret: process.env.NEXTAUTH_SECRET,
   debug: true, // Enable debug mode for troubleshooting
 }
