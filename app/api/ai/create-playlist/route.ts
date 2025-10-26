@@ -11,68 +11,28 @@ const openai = new OpenAI({
 })
 
 export async function POST(request: NextRequest) {
-  console.log("=== CREATE PLAYLIST API CALLED ===")
-  console.log("Request method:", request.method)
-  console.log("Request URL:", request.url)
-  console.log("Environment:", process.env.NODE_ENV)
-  console.log("Vercel:", !!process.env.VERCEL)
-  
-  // Check environment variables
-  console.log("Environment check:")
-  console.log("- OPENAI_API_KEY:", !!process.env.OPENAI_API_KEY)
-  console.log("- NEXTAUTH_SECRET:", !!process.env.NEXTAUTH_SECRET)
-  console.log("- SPOTIFY_CLIENT_ID:", !!process.env.SPOTIFY_CLIENT_ID)
-  console.log("- SPOTIFY_CLIENT_SECRET:", !!process.env.SPOTIFY_CLIENT_SECRET)
-  
   try {
-    console.log("Getting session...")
     const session = await getServerSession(authOptions)
-    console.log("Session retrieved:", !!session)
-    console.log("Session keys:", session ? Object.keys(session) : "No session")
-
     const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
-    console.log("Access token from session:", !!accessToken)
     
     if (!accessToken) {
-      console.log("No access token from session, will check explicit token")
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    console.log("Parsing request body...")
-    const requestBody = await request.json()
-    console.log("Request body parsed successfully:", Object.keys(requestBody))
-    
-    const { playlistName, description, numberOfSongs, userRequest, accessToken: explicitToken } = requestBody
+    const { playlistName, description, numberOfSongs, userRequest, accessToken: explicitToken } = await request.json()
     
     // Use explicit token if provided, otherwise fall back to session
     const finalAccessToken = explicitToken || accessToken;
-    console.log("Final access token:", !!finalAccessToken)
     
     if (!finalAccessToken) {
-      console.error("No access token available - neither session nor explicit token")
       return NextResponse.json({ error: "No access token available" }, { status: 401 })
     }
 
-    console.log(`=== PLAYLIST CREATION API DEBUG ===`)
-    console.log(`Received data:`, { playlistName, description, numberOfSongs, userRequest })
-    console.log(`Number of songs requested: ${numberOfSongs}`)
-    console.log(`Session access token:`, accessToken)
-    console.log(`Explicit token:`, explicitToken)
-    console.log(`Final access token:`, finalAccessToken)
-    console.log(`=====================================`)
-    
-    // Validate required data
     if (!playlistName) {
-      console.error("Missing playlist name")
       return NextResponse.json({ error: "Playlist name is required" }, { status: 400 })
     }
-    
-    if (!finalAccessToken) {
-      console.error("No access token available")
-      return NextResponse.json({ error: "No access token available" }, { status: 401 })
-    }
 
-    const maxSongs = numberOfSongs || 20 // Default to 20 songs if not specified
-    console.log(`Using maxSongs: ${maxSongs}`)
+    const maxSongs = numberOfSongs || 20
 
     // Get user's top artists/tracks for context
     let topArtists, topTracks;

@@ -13,7 +13,6 @@ const openai = new OpenAI({
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-
     const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
     
     if (!accessToken) {

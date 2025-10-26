@@ -137,12 +137,8 @@ export function AIChat() {
 
   const createPlaylist = async () => {
     const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
-    console.log("AIChat - Session:", session);
-    console.log("AIChat - Access token:", accessToken);
-    console.log("AIChat - Playlist creation:", playlistCreation);
     
     if (!playlistCreation || !accessToken) {
-      console.log("AIChat - Missing playlist creation or access token");
       return;
     }
 
@@ -156,62 +152,6 @@ export function AIChat() {
         userRequest: playlistCreation.userRequest
       }
       
-      console.log("AIChat - Sending playlist creation request:", requestData)
-      
-      // Test environment first
-      try {
-        console.log("AIChat - Checking environment...")
-        const envResponse = await fetch('/api/env-check')
-        const envData = await envResponse.json()
-        console.log("AIChat - Environment check:", envData)
-        
-        if (!envData.success) {
-          throw new Error("Environment check failed")
-        }
-      } catch (envError) {
-        console.error("AIChat - Environment check failed:", envError)
-      }
-      
-      // Test with simple API first
-      try {
-        console.log("AIChat - Testing simple API...")
-        const testResponse = await fetch('/api/simple-playlist', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            playlistName: playlistCreation.name,
-            accessToken: accessToken
-          }),
-        })
-        
-        console.log("AIChat - Simple test response status:", testResponse.status)
-        console.log("AIChat - Simple test response ok:", testResponse.ok)
-        
-        const testData = await testResponse.json()
-        console.log("AIChat - Simple test result:", testData)
-        
-        if (!testResponse.ok) {
-          throw new Error(`Simple test failed: ${testResponse.status} - ${testData.error || testData.details}`)
-        }
-      } catch (testError) {
-        console.error("AIChat - Simple test failed:", testError)
-        const errorMessage: Message = {
-          id: Date.now().toString(),
-          role: 'ai',
-          content: `Test failed: ${testError instanceof Error ? testError.message : 'Unknown error'}. Please check your authentication.`,
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, errorMessage])
-        setIsCreatingPlaylist(false)
-        return
-      }
-      
-      console.log("AIChat - Calling main create-playlist API...")
-      console.log("AIChat - Current protocol:", window.location.protocol)
-      console.log("AIChat - Current hostname:", window.location.hostname)
-      
       const response = await fetch('/api/ai/create-playlist', {
         method: 'POST',
         headers: {
@@ -223,26 +163,7 @@ export function AIChat() {
         }),
       })
 
-      console.log("AIChat - Response status:", response.status);
-      console.log("AIChat - Response ok:", response.ok);
-      console.log("AIChat - Response headers:", Object.fromEntries(response.headers.entries()));
-
-      let data;
-      try {
-        data = await response.json()
-        console.log("AIChat - Response data:", data);
-      } catch (parseError) {
-        console.error("AIChat - Failed to parse response:", parseError);
-        const errorMessage: Message = {
-          id: Date.now().toString(),
-          role: 'ai',
-          content: `Failed to parse server response. Status: ${response.status}. Please try again.`,
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, errorMessage])
-        setIsCreatingPlaylist(false)
-        return
-      }
+      const data = await response.json()
 
       if (response.ok) {
         const successMessage: Message = {

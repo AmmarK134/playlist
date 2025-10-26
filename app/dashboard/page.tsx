@@ -185,7 +185,7 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Spotify App Notice */}
-                <div className="fixed top-4 right-4 z-50">
+                <div className="fixed top-20 right-4 z-50">
                   <Card className="bg-green-900/20 border-green-500/30 backdrop-blur-sm max-w-sm">
                     <CardContent className="p-4">
                       <div className="flex items-start space-x-3">

@@ -8,7 +8,6 @@ import { authOptions } from "@/lib/auth"
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
     
     if (!accessToken) {
