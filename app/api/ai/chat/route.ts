@@ -28,16 +28,25 @@ export async function POST(request: NextRequest) {
     // Create Spotify client
     const spotify = createSpotifyClient(accessToken)
 
-    // Get user's top artists and tracks for context
-    const [topArtists, topTracks] = await Promise.all([
-      spotify.getMyTopArtists({ limit: 10, time_range: 'medium_term' }),
-      spotify.getMyTopTracks({ limit: 10, time_range: 'medium_term' })
-    ])
+    // Get user's top artists and tracks for context (with error handling)
+    let topArtists: any = { body: { items: [] } }
+    let topTracks: any = { body: { items: [] } }
+    
+    try {
+      const [artistsResult, tracksResult] = await Promise.all([
+        spotify.getMyTopArtists({ limit: 10, time_range: 'medium_term' }),
+        spotify.getMyTopTracks({ limit: 10, time_range: 'medium_term' })
+      ])
+      topArtists = artistsResult
+      topTracks = tracksResult
+    } catch (error) {
+      // Continue without user context if this fails
+    }
 
     // Build context about user's music taste
     const userContext = `
-User's Top Artists: ${topArtists.body.items.map(artist => artist.name).join(', ')}
-User's Top Tracks: ${topTracks.body.items.map(track => track.name).join(', ')}
+User's Top Artists: ${topArtists.body.items.map((artist: any) => artist.name).join(', ')}
+User's Top Tracks: ${topTracks.body.items.map((track: any) => track.name).join(', ')}
 `
 
     // Create conversation context
@@ -129,8 +138,6 @@ User: ${message}`
           songCount = parseInt(songMatch[1])
         }
       }
-      
-      console.log(`AI wants to create playlist: "${playlistName}" with ${songCount} songs`)
     }
 
     return NextResponse.json({

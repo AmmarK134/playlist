@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const { playlistName, description, numberOfSongs, userRequest, accessToken: explicitToken } = await request.json()
+    const body = await request.json()
+    const { playlistName, description, numberOfSongs, userRequest, accessToken: explicitToken } = body
     
     const finalAccessToken = explicitToken || accessToken;
     
@@ -34,15 +35,15 @@ export async function POST(request: NextRequest) {
     const maxSongs = numberOfSongs || 20
 
     // Get user's top artists/tracks for context
-    let topArtists, topTracks;
+    let topArtists = { body: { items: [] } }
+    let topTracks = { body: { items: [] } }
+    
     try {
       const spotifyClient = createSpotifyClient(finalAccessToken)
       topArtists = await spotifyClient.getMyTopArtists({ limit: 5 })
       topTracks = await spotifyClient.getMyTopTracks({ limit: 5 })
     } catch (error) {
       // Continue without user context if this fails
-      topArtists = { body: { items: [] } }
-      topTracks = { body: { items: [] } }
     }
 
     const userContext = `
@@ -51,11 +52,11 @@ User's Top Tracks: ${topTracks.body.items.map((track: any) => track.name).join('
 `
 
     // Analyze the request to determine the approach
-    const request = userRequest || playlistName;
-    const isSpecificArtist = /(songs by|playlist of|tracks by|music by)\s+[A-Za-z\s]+/i.test(request);
-    const isSimilarToArtist = /(style|similar to|like|sounds like)\s+[A-Za-z\s]+/i.test(request);
-    const isPremadeOption = /(workout|roadtrip|study|party|chill|focus|energy)/i.test(request);
-    const isPersonalTaste = /(my feelings|my mood|my taste|based on me|personal)/i.test(request);
+    const requestText = userRequest || playlistName;
+    const isSpecificArtist = /(songs by|playlist of|tracks by|music by)\s+[A-Za-z\s]+/i.test(requestText);
+    const isSimilarToArtist = /(style|similar to|like|sounds like)\s+[A-Za-z\s]+/i.test(requestText);
+    const isPremadeOption = /(workout|roadtrip|study|party|chill|focus|energy)/i.test(requestText);
+    const isPersonalTaste = /(my feelings|my mood|my taste|based on me|personal)/i.test(requestText);
 
     let approach = "";
     let focusInstructions = "";
@@ -74,10 +75,8 @@ User's Top Tracks: ${topTracks.body.items.map((track: any) => track.name).join('
       focusInstructions = `Focus on the specific request, use user's taste only as secondary reference.`;
     }
 
-    console.log(`Playlist creation approach: ${approach} for request: "${request}"`);
-
     // Generate song suggestions using OpenAI
-    const songGenerationPrompt = `Based on this playlist request: "${request}", generate exactly ${maxSongs} song suggestions in the format "Artist - Song Title". 
+    const songGenerationPrompt = `Based on this playlist request: "${requestText}", generate exactly ${maxSongs} song suggestions in the format "Artist - Song Title". 
     
 APPROACH: ${approach}
 ${focusInstructions}
@@ -139,7 +138,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
     // If we don't have enough songs, try to generate more
     if (songs.length < maxSongs) {
       try {
-        const additionalPrompt = `Generate ${maxSongs - songs.length} more song suggestions in the same format for the playlist: "${request}". Return only "Artist - Song Title" format, one per line.`
+        const additionalPrompt = `Generate ${maxSongs - songs.length} more song suggestions in the same format for the playlist: "${requestText}". Return only "Artist - Song Title" format, one per line.`
         
         const additionalCompletion = await openai.chat.completions.create({
           model: "gpt-4",
@@ -165,7 +164,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
       }
     }
 
-    // Get user's profile first with retry
+    // Get user's profile
     let userResponse;
     let retries = 3;
     
@@ -198,7 +197,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
 
     const user = await userResponse.json()
 
-    // Create the playlist using the correct API endpoint
+    // Create the playlist
     const createPlaylistResponse = await fetch(`https://api.spotify.com/v1/users/${user.id}/playlists`, {
       method: "POST",
       headers: {
