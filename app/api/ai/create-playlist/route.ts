@@ -12,53 +12,34 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("=== CREATE PLAYLIST API CALLED ===")
-    console.log("Environment:", process.env.NODE_ENV)
-    console.log("Vercel:", !!process.env.VERCEL)
-    
-    // Check environment variables
-    console.log("Environment check:")
-    console.log("- OPENAI_API_KEY:", !!process.env.OPENAI_API_KEY)
-    console.log("- NEXTAUTH_SECRET:", !!process.env.NEXTAUTH_SECRET)
-    console.log("- SPOTIFY_CLIENT_ID:", !!process.env.SPOTIFY_CLIENT_ID)
-    console.log("- SPOTIFY_CLIENT_SECRET:", !!process.env.SPOTIFY_CLIENT_SECRET)
-    
     const session = await getServerSession(authOptions)
     const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
     
     if (!accessToken) {
-      console.error("No access token available")
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
     const { playlistName, description, numberOfSongs, userRequest, accessToken: explicitToken } = await request.json()
     
-    // Use explicit token if provided, otherwise fall back to session
     const finalAccessToken = explicitToken || accessToken;
     
     if (!finalAccessToken) {
-      console.error("No final access token available")
       return NextResponse.json({ error: "No access token available" }, { status: 401 })
     }
 
     if (!playlistName) {
-      console.error("Missing playlist name")
       return NextResponse.json({ error: "Playlist name is required" }, { status: 400 })
     }
 
-    console.log(`Creating playlist: "${playlistName}" with ${numberOfSongs || 20} songs`)
     const maxSongs = numberOfSongs || 20
 
     // Get user's top artists/tracks for context
     let topArtists, topTracks;
     try {
-      console.log("Getting user's top artists/tracks...")
       const spotifyClient = createSpotifyClient(finalAccessToken)
       topArtists = await spotifyClient.getMyTopArtists({ limit: 5 })
       topTracks = await spotifyClient.getMyTopTracks({ limit: 5 })
-      console.log("Successfully got user's top artists/tracks")
     } catch (error) {
-      console.error("Error getting user's top artists/tracks:", error)
       // Continue without user context if this fails
       topArtists = { body: { items: [] } }
       topTracks = { body: { items: [] } }
@@ -114,7 +95,6 @@ Return only the song suggestions, one per line, in the format "Artist - Song Tit
 
     let songCompletion;
     try {
-      console.log("Calling OpenAI API...")
       songCompletion = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
@@ -138,20 +118,15 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
         max_tokens: 1000,
         temperature: 0.8,
       })
-      console.log("OpenAI API call successful")
     } catch (error) {
-      console.error("Error calling OpenAI:", error)
       throw new Error(`Failed to generate song suggestions: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 
     const songSuggestions = songCompletion.choices[0]?.message?.content || ""
     let songs = songSuggestions.split('\n').filter(song => song.trim()).slice(0, maxSongs)
     
-    console.log(`Generated ${songs.length} song suggestions:`, songs)
-    
     // Fallback if no songs were generated
     if (songs.length === 0) {
-      console.log("No songs generated, using fallback songs")
       songs = [
         "The Beatles - Here Comes The Sun",
         "Queen - Bohemian Rhapsody", 
@@ -163,7 +138,6 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
     
     // If we don't have enough songs, try to generate more
     if (songs.length < maxSongs) {
-      console.log(`Only generated ${songs.length} songs, requesting ${maxSongs - songs.length} more...`)
       try {
         const additionalPrompt = `Generate ${maxSongs - songs.length} more song suggestions in the same format for the playlist: "${request}". Return only "Artist - Song Title" format, one per line.`
         
@@ -186,14 +160,12 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
         const additionalSongs = additionalCompletion.choices[0]?.message?.content || ""
         const moreSongs = additionalSongs.split('\n').filter(song => song.trim())
         songs.push(...moreSongs.slice(0, maxSongs - songs.length))
-        console.log(`Added ${moreSongs.length} more songs, total: ${songs.length}`)
       } catch (error) {
-        console.log("Could not generate additional songs:", error)
+        // Continue with what we have
       }
     }
 
     // Get user's profile first with retry
-    console.log("Getting user profile...")
     let userResponse;
     let retries = 3;
     
@@ -206,32 +178,27 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
         })
         
         if (userResponse.ok) {
-          console.log("User profile retrieved successfully")
           break;
         } else {
           const errorText = await userResponse.text()
-          console.error(`Failed to get user profile (attempt ${4-retries}):`, userResponse.status, errorText)
           if (retries === 1) {
             throw new Error(`Failed to get user profile: ${userResponse.status} - ${errorText}`)
           }
         }
       } catch (error) {
-        console.error(`Error getting user profile (attempt ${4-retries}):`, error)
         if (retries === 1) {
           throw error;
         }
       }
       retries--;
       if (retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
     const user = await userResponse.json()
-    console.log("User profile retrieved:", user.id)
 
     // Create the playlist using the correct API endpoint
-    console.log("Creating playlist...")
     const createPlaylistResponse = await fetch(`https://api.spotify.com/v1/users/${user.id}/playlists`, {
       method: "POST",
       headers: {
@@ -252,21 +219,16 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
       } catch (e) {
         errorText = "Unknown error"
       }
-      console.error("Failed to create playlist:", createPlaylistResponse.status, errorText)
       throw new Error(`Failed to create playlist: ${createPlaylistResponse.status} - ${errorText}`)
     }
 
     const playlist = await createPlaylistResponse.json()
-    console.log("Playlist created successfully:", playlist.id)
-    console.log(`Created playlist: ${playlist.name} with ID: ${playlist.id}`)
 
     // Search for songs and get their URIs
-    console.log(`Searching for ${songs.length} songs...`)
     const songUris: string[] = []
     
     for (const song of songs) {
       try {
-        console.log(`Searching for: ${song}`)
         const searchResponse = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(song)}&type=track&limit=1`, {
           headers: {
             Authorization: `Bearer ${finalAccessToken}`,
@@ -277,23 +239,15 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
           const searchData = await searchResponse.json()
           if (searchData.tracks?.items?.[0]) {
             songUris.push(searchData.tracks.items[0].uri)
-            console.log(`Found: ${song} -> ${searchData.tracks.items[0].uri}`)
-          } else {
-            console.log(`No results for: ${song}`)
           }
-        } else {
-          console.log(`Search failed for: ${song} (${searchResponse.status})`)
         }
       } catch (error) {
-        console.log(`Error searching for song: ${song}`, error)
+        // Continue with next song
       }
     }
-    
-    console.log(`Found ${songUris.length} songs out of ${songs.length} requested`)
 
     // Add songs to playlist
     if (songUris.length > 0) {
-      console.log(`Adding ${songUris.length} tracks to playlist...`)
       const addTracksResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
         method: "POST",
         headers: {
@@ -312,13 +266,8 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
         } catch (e) {
           errorText = "Unknown error"
         }
-        console.error("Failed to add tracks to playlist:", addTracksResponse.status, errorText)
         throw new Error(`Failed to add tracks to playlist: ${addTracksResponse.status} - ${errorText}`)
-      } else {
-        console.log("Successfully added tracks to playlist")
       }
-    } else {
-      console.log("No songs found to add to playlist")
     }
 
     return NextResponse.json({
@@ -336,9 +285,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
 
   } catch (error) {
     console.error("Error creating playlist:", error)
-    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace")
     
-    // Return more specific error information
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     const statusCode = errorMessage.includes("401") ? 401 : 
                       errorMessage.includes("403") ? 403 : 
