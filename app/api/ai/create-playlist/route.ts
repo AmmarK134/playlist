@@ -12,10 +12,22 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("=== CREATE PLAYLIST API CALLED ===")
+    console.log("Environment:", process.env.NODE_ENV)
+    console.log("Vercel:", !!process.env.VERCEL)
+    
+    // Check environment variables
+    console.log("Environment check:")
+    console.log("- OPENAI_API_KEY:", !!process.env.OPENAI_API_KEY)
+    console.log("- NEXTAUTH_SECRET:", !!process.env.NEXTAUTH_SECRET)
+    console.log("- SPOTIFY_CLIENT_ID:", !!process.env.SPOTIFY_CLIENT_ID)
+    console.log("- SPOTIFY_CLIENT_SECRET:", !!process.env.SPOTIFY_CLIENT_SECRET)
+    
     const session = await getServerSession(authOptions)
     const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
     
     if (!accessToken) {
+      console.error("No access token available")
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
@@ -25,21 +37,26 @@ export async function POST(request: NextRequest) {
     const finalAccessToken = explicitToken || accessToken;
     
     if (!finalAccessToken) {
+      console.error("No final access token available")
       return NextResponse.json({ error: "No access token available" }, { status: 401 })
     }
 
     if (!playlistName) {
+      console.error("Missing playlist name")
       return NextResponse.json({ error: "Playlist name is required" }, { status: 400 })
     }
 
+    console.log(`Creating playlist: "${playlistName}" with ${numberOfSongs || 20} songs`)
     const maxSongs = numberOfSongs || 20
 
     // Get user's top artists/tracks for context
     let topArtists, topTracks;
     try {
+      console.log("Getting user's top artists/tracks...")
       const spotifyClient = createSpotifyClient(finalAccessToken)
       topArtists = await spotifyClient.getMyTopArtists({ limit: 5 })
       topTracks = await spotifyClient.getMyTopTracks({ limit: 5 })
+      console.log("Successfully got user's top artists/tracks")
     } catch (error) {
       console.error("Error getting user's top artists/tracks:", error)
       // Continue without user context if this fails
@@ -97,6 +114,7 @@ Return only the song suggestions, one per line, in the format "Artist - Song Tit
 
     let songCompletion;
     try {
+      console.log("Calling OpenAI API...")
       songCompletion = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
@@ -120,6 +138,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
         max_tokens: 1000,
         temperature: 0.8,
       })
+      console.log("OpenAI API call successful")
     } catch (error) {
       console.error("Error calling OpenAI:", error)
       throw new Error(`Failed to generate song suggestions: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -187,6 +206,7 @@ DEFAULT: For other requests, focus on the specific request and use user's taste 
         })
         
         if (userResponse.ok) {
+          console.log("User profile retrieved successfully")
           break;
         } else {
           const errorText = await userResponse.text()
