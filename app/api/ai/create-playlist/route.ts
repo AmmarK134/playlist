@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
     const maxSongs = numberOfSongs || 20
 
     // Get user's top artists/tracks for context
-    let topArtists = { body: { items: [] } }
-    let topTracks = { body: { items: [] } }
+    let topArtists: any = { body: { items: [] } }
+    let topTracks: any = { body: { items: [] } }
     
     try {
       const spotifyClient = createSpotifyClient(finalAccessToken)

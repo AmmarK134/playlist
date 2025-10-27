@@ -25,14 +25,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 })
     }
 
-    // Create Spotify client
-    const spotify = createSpotifyClient(accessToken)
-
     // Get user's top artists and tracks for context (with error handling)
     let topArtists: any = { body: { items: [] } }
     let topTracks: any = { body: { items: [] } }
     
     try {
+      const spotify = createSpotifyClient(accessToken)
       const [artistsResult, tracksResult] = await Promise.all([
         spotify.getMyTopArtists({ limit: 10, time_range: 'medium_term' }),
         spotify.getMyTopTracks({ limit: 10, time_range: 'medium_term' })
