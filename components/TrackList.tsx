@@ -1,174 +1,164 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Play, Pause, ExternalLink } from "lucide-react"
-import { useState } from "react"
-import Image from "next/image"
-import { SimplePlayer } from "./SimplePlayer"
-
-interface Track {
-  track: {
-    id: string
-    name: string
-    artists: Array<{ name: string }>
-    album: {
-      name: string
-      images: Array<{ url: string }>
-    }
-    duration_ms: number
-    external_urls: {
-      spotify: string
-    }
-    preview_url: string | null
-    uri: string // Spotify URI for playback
-  }
-}
+import Image from "next/image";
+import { ArrowLeft, ArrowUpRight, Clock3, Disc3, Music2 } from "lucide-react";
+import type { SpotifyTrackItem } from "@/lib/hooks/useSpotifyData";
 
 interface TrackListProps {
-  tracks: Track[]
-  playlistName: string
-  onBack: () => void
+  tracks: SpotifyTrackItem[];
+  playlistName: string;
+  onBack: () => void;
+}
+
+function formatDuration(milliseconds: number) {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 export function TrackList({ tracks, playlistName, onBack }: TrackListProps) {
-  const [playingTrack, setPlayingTrack] = useState<string | null>(null)
-  const [currentTrackUri, setCurrentTrackUri] = useState<string | null>(null)
-  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null)
-
-  const formatDuration = (ms: number) => {
-    const minutes = Math.floor(ms / 60000)
-    const seconds = Math.floor((ms % 60000) / 1000)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
-
-  const playTrack = (track: Track['track'], index: number) => {
-    if (playingTrack === track.id) {
-      setPlayingTrack(null)
-      setCurrentTrackUri(null)
-      setCurrentTrackIndex(null)
-      return
-    }
-
-    // Use Spotify Web Playback SDK for full track playback
-    setCurrentTrackUri(track.uri)
-    setPlayingTrack(track.id)
-    setCurrentTrackIndex(index)
-  }
-
-  const handleTrackChange = (index: number) => {
-    setCurrentTrackIndex(index)
-    const track = tracks[index]?.track
-    if (track) {
-      setPlayingTrack(track.id)
-      setCurrentTrackUri(track.uri)
-    }
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          className="border-gray-600 text-white hover:bg-gray-800"
-        >
-          ← Back to Playlists
-        </Button>
-        <h2 className="text-xl font-semibold text-white">{playlistName}</h2>
+    <section aria-label={`${playlistName} tracks`}>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-7 inline-flex cursor-pointer items-center gap-2 text-sm text-[#b6b8b0] transition-colors hover:text-[#e9b56d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#e9b56d]"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to your
+        library
+      </button>
+      <div className="mb-7 flex items-center gap-4">
+        <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[#393b32] bg-[#252721] text-[#c4c9a7] sm:flex">
+          <Disc3 className="h-8 w-8 stroke-1" aria-hidden="true" />
+        </div>
+        <div className="min-w-0">
+          <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#a4a79b]">
+            Your collection
+          </p>
+          <h2 className="text-2xl font-semibold tracking-tight text-[#f3f0e8] sm:text-3xl">
+            {playlistName}
+          </h2>
+          <p className="mt-2 text-xs text-[#999b94]">
+            {tracks.length} tracks loaded. Open a track in Spotify to listen.
+          </p>
+        </div>
       </div>
-
-      {currentTrackUri && (
-        <SimplePlayer 
-          trackUri={currentTrackUri} 
-          onTrackEnd={() => {
-            setPlayingTrack(null)
-            setCurrentTrackIndex(null)
-          }}
-          playlistTracks={tracks}
-          currentTrackIndex={currentTrackIndex ?? undefined}
-          onTrackChange={handleTrackChange}
-        />
-      )}
-
-      <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-white">Tracks ({tracks.length})</CardTitle>
-          <CardDescription className="text-gray-400">
-            Click play to preview songs or open in Spotify
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {tracks.map((item, index) => {
-              const track = item.track
-              if (!track) return null
-              
-              const imageUrl = track.album.images?.[0]?.url || "/placeholder-album.svg"
-              const isPlaying = playingTrack === track.id
-              
+      {tracks.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-[#383932] px-6 py-16 text-center">
+          <Music2
+            className="mx-auto mb-4 h-7 w-7 text-[#a4a79b]"
+            aria-hidden="true"
+          />
+          <h3 className="text-base font-medium text-[#f3f0e8]">
+            A little room for new discoveries.
+          </h3>
+          <p className="mt-2 text-sm text-[#999b94]">
+            This playlist doesn’t have any tracks yet.
+          </p>
+        </div>
+      ) : (
+        <table className="w-full table-fixed border-collapse text-left">
+          <caption className="sr-only">
+            Tracks in {playlistName}. Spotify links open in a new tab.
+          </caption>
+          <thead>
+            <tr className="border-b border-[#30302c] text-[10px] font-medium uppercase tracking-[0.15em] text-[#a4a79b]">
+              <th className="w-8 pb-3 pl-1 font-medium sm:w-10" scope="col">
+                #
+              </th>
+              <th className="pb-3 font-medium" scope="col">
+                Track
+              </th>
+              <th
+                className="hidden w-[25%] pb-3 font-medium md:table-cell"
+                scope="col"
+              >
+                Album
+              </th>
+              <th
+                className="w-12 pb-3 text-right font-medium sm:w-16"
+                scope="col"
+              >
+                <Clock3 className="ml-auto h-3.5 w-3.5" aria-label="Duration" />
+              </th>
+              <th className="w-10 pb-3 font-medium sm:w-14" scope="col">
+                <span className="sr-only">Listen</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {tracks.map(({ track }, index) => {
+              const spotifyUrl = track?.external_urls?.spotify;
+              const canListen = spotifyUrl?.startsWith(
+                "https://open.spotify.com/",
+              );
               return (
-                <div
-                  key={track.id}
-                  className="flex items-center space-x-4 p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
+                <tr
+                  key={`${track?.id ?? "unavailable"}-${index}`}
+                  className="group border-b border-[#30302c]/50 transition-colors hover:bg-[#22231f]"
                 >
-                  <div className="flex-shrink-0">
-                    <Image
-                      src={imageUrl}
-                      alt={track.album.name}
-                      width={48}
-                      height={48}
-                      className="rounded object-cover"
-                    />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-white font-medium truncate">
-                      {track.name}
-                    </h4>
-                    <p className="text-gray-400 text-sm truncate">
-                      {track.artists.map(artist => artist.name).join(", ")}
-                    </p>
-                    <p className="text-gray-500 text-xs truncate">
-                      {track.album.name}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline" className="border-gray-600 text-gray-400">
-                      {formatDuration(track.duration_ms)}
-                    </Badge>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => playTrack(track, index)}
-                      className="border-gray-600 text-white hover:bg-gray-800"
-                    >
-                      {isPlaying ? (
-                        <Pause className="h-4 w-4" />
-                      ) : (
-                        <Play className="h-4 w-4" />
-                      )}
-                    </Button>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(track.external_urls.spotify, "_blank")}
-                      className="border-gray-600 text-white hover:bg-gray-800"
-                      title="Open in Spotify"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )
+                  <td className="py-3 pl-1 text-xs tabular-nums text-[#8e9187]">
+                    {String(index + 1).padStart(2, "0")}
+                  </td>
+                  <td className="py-3 pr-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-[#2c2e27] text-[#a4a79b]">
+                        {track?.album?.images?.[0]?.url ? (
+                          <Image
+                            src={track.album.images[0].url}
+                            alt=""
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <Music2 className="h-4 w-4" aria-hidden="true" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-[#eeeae0]">
+                          {track?.name || "Unavailable track"}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-[#a4a79b]">
+                          {track?.explicit && (
+                            <span
+                              className="mr-1.5 inline-block rounded-sm bg-[#74776c] px-1 align-middle text-[8px] leading-3 text-[#191b16]"
+                              aria-label="Explicit"
+                            >
+                              E
+                            </span>
+                          )}
+                          {track?.artists
+                            ?.map((artist) => artist.name)
+                            .join(", ") || "No longer available on Spotify"}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="hidden truncate py-3 pr-4 text-xs text-[#a4a79b] md:table-cell">
+                    {track?.album?.name || "—"}
+                  </td>
+                  <td className="py-3 text-right text-xs tabular-nums text-[#a4a79b]">
+                    {track ? formatDuration(track.duration_ms) : "—"}
+                  </td>
+                  <td className="py-3 pl-1 text-right">
+                    {canListen && (
+                      <a
+                        href={spotifyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Listen to ${track?.name} in Spotify (new tab)`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#a4a79b] transition-colors hover:bg-[#33352b] hover:text-[#e9b56d] focus-visible:outline-2 focus-visible:outline-[#e9b56d]"
+                      >
+                        <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              );
             })}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
 }
