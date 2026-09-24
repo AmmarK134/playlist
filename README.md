@@ -1,153 +1,62 @@
 # PlaylistHelper
 
-An AI-powered Spotify playlist creator built with Next.js 14, TypeScript, Tailwind CSS, and shadcn/ui.
+A focused workspace for turning an idea into a Spotify playlist. Describe a mood, browse your library, and save a playlist to your Spotify account.
 
-## Features
+Built with Next.js 15, React 19, TypeScript, Tailwind CSS 4, NextAuth, and the Spotify Web API. Authentication uses encrypted JWT sessions; no database is required.
 
-- 🎵 **Spotify Integration** - Connect your Spotify account with OAuth
-- 🤖 **AI-Powered** - Chat with AI to create personalized playlists
-- 🎨 **Modern UI** - Clean, dark theme with shadcn/ui components
-- 🔐 **Secure Authentication** - NextAuth.js with Spotify provider
-- 📱 **Responsive Design** - Works on all devices
-- ⚡ **Fast Performance** - Built with Next.js 14 and App Router
+## Local setup
 
-## Tech Stack
-
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui
-- **Authentication**: NextAuth.js with JWT sessions
-- **State Management**: TanStack Query
-- **Icons**: Lucide React
-- **Music API**: Spotify Web API
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ 
-- npm, yarn, or pnpm
-- Spotify Developer Account
-
-### 1. Clone the Repository
+Use Node.js 22 or newer and npm.
 
 ```bash
-git clone <your-repo-url>
-cd playlist-helper
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-# or
-yarn install
-# or
-pnpm install
-```
-
-### 3. Set Up Environment Variables
-
-Copy the example environment file:
-
-```bash
+npm ci
 cp .env.example .env.local
-```
-
-Fill in your environment variables:
-
-```env
-# NextAuth Configuration
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-nextauth-secret-here
-
-# Spotify OAuth Configuration
-SPOTIFY_CLIENT_ID=your-spotify-client-id
-SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
-
-# No database needed - using JWT sessions
-
-# OpenAI (for future AI features)
-OPENAI_API_KEY=your-openai-api-key
-```
-
-### 4. Set Up Spotify App
-
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-2. Create a new app
-3. Add `http://localhost:3000/api/auth/callback/spotify` to Redirect URIs
-4. Copy your Client ID and Client Secret to `.env.local`
-
-### 5. No Database Setup Needed!
-
-Your app uses JWT sessions - no database required!
-
-### 6. Run the Development Server
-
-```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The [demo studio](http://127.0.0.1:3000/dashboard?demo=1) works without credentials and uses clearly labeled sample content. Connecting your own library and creating playlists requires the configuration below.
 
-## Project Structure
+### Spotify connection
 
-```
-playlist-helper/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   └── auth/          # NextAuth configuration
-│   ├── dashboard/         # Dashboard page
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   ├── Footer.tsx        # Footer component
-│   ├── LoginButton.tsx   # Spotify login button
-│   └── Navbar.tsx        # Navigation bar
-├── lib/                  # Utility libraries
-│   ├── providers.tsx     # React Query & NextAuth providers
-│   ├── prisma.ts         # Prisma client
-│   ├── spotify.ts        # Spotify API client
-│   └── utils.ts          # Utility functions
-├── prisma/               # Database schema
-│   └── schema.prisma     # Prisma schema
-└── public/               # Static assets
-```
+1. Create or open an app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Add `http://127.0.0.1:3000/api/auth/callback/spotify` as a redirect URI.
+3. Put its client ID and secret in `.env.local`.
+4. Set `NEXTAUTH_URL=http://127.0.0.1:3000` and generate `NEXTAUTH_SECRET` with `openssl rand -base64 32`.
+5. Add your Spotify account under the app's **Users Management** settings.
 
-## Available Scripts
+Spotify requires an explicit loopback IP for local HTTP redirects; `localhost` is not accepted. The browser host, `NEXTAUTH_URL`, and registered redirect must agree. See [Spotify's redirect requirements](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri).
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+Development-mode apps require the app owner to have Spotify Premium and currently allow up to five authorized users. A successful login alone does not guarantee API access. See [Spotify quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
 
-## Features in Development
+### Playlist generation
 
-- [ ] AI chat interface for playlist creation
-- [ ] Playlist management and editing
-- [ ] Music discovery recommendations
-- [ ] Playlist sharing and collaboration
-- [ ] Advanced filtering and search
+Set `OPENAI_API_KEY` in `.env.local` to enable generation. The API key needs an active API billing account and model access. `OPENAI_MODEL` optionally overrides the default `gpt-4.1-mini`. Never put secrets in `NEXT_PUBLIC_` variables or commit `.env.local`.
 
-## Contributing
+Restart the development server after changing environment variables. The complete list is in [.env.example](.env.example).
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+PlaylistHelper sends the text you enter to OpenAI to prepare a brief and select songs. It does not send your Spotify library or listening history to the model. Songs are matched against Spotify before a private playlist is created. Some requested tracks may be unavailable; the result reports the number actually saved.
 
-## License
+## Commands
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+| Command             | Purpose                                               |
+| ------------------- | ----------------------------------------------------- |
+| `npm run dev`       | Start the development server                          |
+| `npm run lint`      | Check ESLint rules, including warnings                |
+| `npm run typecheck` | Check TypeScript types                                |
+| `npm test`          | Run server regression tests                           |
+| `npm run build`     | Create the production build with lint and type checks |
+| `npm start`         | Serve the production build                            |
 
-## Support
+GitHub Actions runs the quality checks on pushes and pull requests. Regression tests mock external requests to cover authentication refresh, validation, Spotify matching, and safe playlist creation. The build does not require live service credentials. A real account smoke test is still needed to verify OAuth and playlist creation against your Spotify app.
 
-If you have any questions or need help, please open an issue on GitHub.
+The lockfile includes security patches for the Next.js 15.5 release line. `package.json` overrides Next.js's pinned PostCSS dependency with a patched 8.x version; retain that override until a framework upgrade no longer requires it. Run `npm audit` when updating dependencies.
+
+## Project layout
+
+- `app/` — public preview, dashboard, and server API routes
+- `components/` — interface and reusable UI components
+- `lib/` — authentication, Spotify requests, data hooks, and shared helpers
+- `types/` — application type declarations
+- `public/` — static assets
+
+See [Vercel deployment](VERCEL_DEPLOYMENT.md) for hosting and [Spotify troubleshooting](SPOTIFY_OAUTH_FIX.md) for connection issues.

@@ -1,97 +1,37 @@
-# 🔧 Spotify OAuth Callback Issues - FIXED!
+# Spotify connection troubleshooting
 
-## ✅ **Issues Fixed:**
+## Local callback configuration
 
-1. **Session Access Token Mismatch** - Fixed property name inconsistency
-2. **Missing Spotify Scopes** - Added required scopes for playlist access
-3. **API Route Token Handling** - Updated all routes to handle both token formats
+Use these values consistently:
 
-## 🎯 **What You Need to Check:**
-
-### **1. Spotify App Redirect URIs**
-
-Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and make sure your app has BOTH redirect URIs:
-
-```
-# For Development
-http://localhost:3000/api/auth/callback/spotify
-
-# For Production (replace with your actual Vercel URL)
-https://your-app.vercel.app/api/auth/callback/spotify
+```text
+Browser:       http://127.0.0.1:3000
+NEXTAUTH_URL:  http://127.0.0.1:3000
+Redirect URI:  http://127.0.0.1:3000/api/auth/callback/spotify
 ```
 
-### **2. Environment Variables**
+Register the redirect in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Spotify does not accept `localhost` redirects. Production callbacks must use HTTPS. See the [official redirect requirements](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri).
 
-Make sure these are set correctly in both `.env.local` and Vercel:
+## Common failures
 
-```bash
-# Development (.env.local)
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-here
-SPOTIFY_CLIENT_ID=your-client-id
-SPOTIFY_CLIENT_SECRET=your-client-secret
-OPENAI_API_KEY=your-openai-key
+| Symptom                                   | What to check                                                                                                     |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Invalid redirect URI                      | Compare the complete callback, including protocol, hostname, port, and path.                                      |
+| Callback or configuration error           | Check `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and `NEXTAUTH_SECRET`; restart or redeploy after changes.     |
+| Login succeeds but library returns 403    | Add the account to Users Management and verify the development-mode app owner's Premium subscription.             |
+| Session expires or reconnect is requested | Sign out and reconnect. A revoked or invalid refresh token requires a fresh authorization.                        |
+| A new permission is unavailable           | Reconnect to grant the current set of scopes.                                                                     |
+| Requests return 429                       | Wait before retrying; check the app's usage and Spotify quota.                                                    |
+| Playlist contents are unavailable         | Spotify restricts some playlist-content access, especially for playlists the user does not own or collaborate on. |
 
-# Production (Vercel)
-NEXTAUTH_URL=https://your-app.vercel.app
-NEXTAUTH_SECRET=your-secret-here
-SPOTIFY_CLIENT_ID=your-client-id
-SPOTIFY_CLIENT_SECRET=your-client-secret
-OPENAI_API_KEY=your-openai-key
-```
+Current development-mode limits and account requirements are documented under [Spotify quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes). This app uses the current playlist endpoints described in the [2026 migration guide](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide).
 
-### **3. Spotify App Settings**
+## Verify a connection
 
-In your Spotify app settings, make sure:
+1. Open the exact configured browser origin and connect Spotify.
+2. Confirm your own profile and playlists load.
+3. Open a playlist you own and check its tracks.
+4. Create a small playlist and open the saved result in Spotify.
+5. Sign out and confirm protected data is no longer visible.
 
-1. **App Name**: Something descriptive
-2. **App Description**: Brief description
-3. **Website**: Your Vercel URL (e.g., `https://your-app.vercel.app`)
-4. **Redirect URIs**: Both localhost and production URLs
-5. **Scopes**: The app will request these automatically
-
-## 🚀 **Updated Scopes (Now Included):**
-
-The app now requests these scopes:
-- `user-read-email` - Read user's email
-- `user-read-private` - Read user's private info
-- `user-top-read` - Read user's top artists/tracks
-- `user-read-recently-played` - Read recently played tracks
-- `playlist-read-private` - Read user's private playlists
-- `playlist-read-public` - Read public playlists
-- `playlist-modify-private` - Create/modify private playlists
-- `playlist-modify-public` - Create/modify public playlists
-
-## 🔍 **Testing Steps:**
-
-1. **Clear Browser Data**: Clear cookies and local storage
-2. **Test Development**: `npm run dev` and try logging in
-3. **Test Production**: Deploy and test on Vercel
-4. **Check Console**: Look for any error messages in browser console
-5. **Check Network Tab**: Look for failed API calls
-
-## 🐛 **Common Issues & Solutions:**
-
-### **"Callback Error"**
-- Check redirect URIs match exactly
-- Ensure NEXTAUTH_URL matches your domain
-- Clear browser cookies and try again
-
-### **"Not Authenticated" Error**
-- Check that all environment variables are set
-- Verify Spotify app settings
-- Check browser console for errors
-
-### **"No Playlists Showing"**
-- The scopes have been updated to include playlist access
-- Try logging out and back in to refresh permissions
-- Check that the user has playlists in their Spotify account
-
-## ✅ **What's Fixed:**
-
-- ✅ Session token handling (both `accessToken` and `access_token`)
-- ✅ Added missing Spotify scopes for playlist access
-- ✅ Updated all API routes to handle tokens correctly
-- ✅ Better error handling and debugging
-
-**Your app should now work for all users!** 🎉
+If troubleshooting requires logs, record the HTTP status and error message. Do not share access tokens, refresh tokens, session cookies, client secrets, or API keys.
