@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { authOptions, isSpotifyConfigured } from "@/lib/auth";
 import { ApiError } from "@/lib/api-error";
+import { describeOpenAIError } from "@/lib/openai-error";
 
 export const privateHeaders = { "Cache-Control": "private, no-store" };
 
@@ -108,16 +109,23 @@ export function apiErrorResponse(error: unknown) {
   let status = 500;
   let message = "Something went wrong. Please try again.";
   let retryAfter: number | undefined;
+  let code: string | undefined;
   if (error instanceof ApiError) {
     status = error.status;
     message = error.message;
     retryAfter = error.retryAfter;
   } else if (error instanceof OpenAI.APIError) {
-    status = error.status === 429 ? 429 : 502;
-    message =
-      error.status === 429
-        ? "The playlist assistant is at its usage limit. Please try again later."
-        : "The playlist assistant is unavailable. Please try again shortly.";
+    const details = describeOpenAIError(error);
+    status = details.status;
+    message = details.message;
+    retryAfter = details.retryAfter;
+    code = details.code;
+    // Log only classified metadata; provider messages can contain secrets or prompts.
+    console.warn("PlaylistHelper OpenAI request failed", {
+      status: error.status,
+      code: details.providerCode,
+      category: details.category,
+    });
   } else if (
     error instanceof Error &&
     ["TimeoutError", "AbortError"].includes(error.name)
@@ -126,7 +134,7 @@ export function apiErrorResponse(error: unknown) {
     message = "The service took too long to respond. Please try again.";
   }
   return NextResponse.json(
-    { error: message },
+    { error: message, ...(code ? { code } : {}) },
     {
       status,
       headers: {
