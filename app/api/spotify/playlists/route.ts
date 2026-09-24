@@ -1,25 +1,37 @@
-export const runtime = "nodejs";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  normalizePlaylist,
+  spotifyRequest,
+  type SpotifyPage,
+  type SpotifyPlaylist,
+} from "@/lib/spotify";
+import {
+  apiErrorResponse,
+  paginationParams,
+  privateHeaders,
+  requireSpotifySession,
+} from "@/lib/server-api";
 
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { createSpotifyClient } from "@/lib/spotify"
-import { authOptions } from "@/lib/auth"
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    const accessToken = (session as any)?.accessToken || (session as any)?.access_token;
-    
-    if (!accessToken) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-    }
-
-    const spotify = createSpotifyClient(accessToken)
-    const playlists = await spotify.getUserPlaylists()
-    
-    return NextResponse.json(playlists.body)
+    const { accessToken } = await requireSpotifySession();
+    const { limit, offset } = paginationParams(request, 24);
+    const page = await spotifyRequest<SpotifyPage<SpotifyPlaylist | null>>(
+      accessToken,
+      `/me/playlists?limit=${limit}&offset=${offset}`,
+    );
+    return NextResponse.json(
+      {
+        ...page,
+        items: page.items
+          .filter((playlist): playlist is SpotifyPlaylist => Boolean(playlist))
+          .map(normalizePlaylist),
+      },
+      { headers: privateHeaders },
+    );
   } catch (error) {
-    console.error("Error fetching playlists:", error)
-    return NextResponse.json({ error: "Failed to fetch playlists" }, { status: 500 })
+    return apiErrorResponse(error);
   }
 }
